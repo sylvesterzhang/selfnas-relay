@@ -1,0 +1,16 @@
+# Local build output
+/bin/
+relay
+*.exe
+
+# Local environment and secrets
+.env
+*.local
+
+# Go tools
+vendor/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
