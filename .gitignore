@@ -1,6 +1,6 @@
 # Local build output
 /bin/
-relay
+/relay
 *.exe
 
 # Local environment and secrets
