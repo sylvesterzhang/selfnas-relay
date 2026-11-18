@@ -44,6 +44,10 @@ type apiResult struct {
 func main() {
 	addr := env("RELAY_LISTEN_ADDR", "0.0.0.0")
 	port := env("RELAY_LISTEN_PORT", "8080")
+	if os.Getenv("RELAY_PREVIEW") == "1" {
+		runPreview(addr, port)
+		return
+	}
 	dsn := os.Getenv("RELAY_SQLSERVER_URL")
 	if dsn == "" {
 		log.Fatal("RELAY_SQLSERVER_URL is required")
