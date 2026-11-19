@@ -154,7 +154,7 @@ Relay 在同一个 HTTP 服务里提供了两套完全不同用途的通道：
 - 限速配置 `/api/settings/limits`
 - 初始化 `/api/setup/status`、`/api/setup/password`；改密 `/api/password/change`
 
-**首次初始化只能在服务器本机（回环地址）完成**：没有管理员时打开管理台会进入初始化页，设置两次新密码后以 bcrypt 落库。没有公开默认密码。
+**首次初始化可以从远程管理电脑完成**：没有管理员时打开管理台会进入初始化页，设置两次新密码后以 bcrypt 落库。没有公开默认密码。请使用 HTTPS、内网/VPN 或 IP 白名单保护初始化入口。
 
 #### 2. 数据面（WebSocket 长连接 + HTTP 转发）
 
@@ -361,7 +361,7 @@ chmod +x start.sh          # 解压后给脚本一次执行权限
 
 #### 3. 首次初始化
 
-在**服务器本机**打开 `http://127.0.0.1:8080/`，进入初始化页，设置两次新密码（至少 8 位）。初始化接口只接受回环地址请求。
+在浏览器打开 Relay 管理台地址（例如 `https://relay.example.com/` 或 `http://服务器IP:8080/`），进入初始化页，设置两次新密码（至少 8 位）。首次初始化可以从远程管理电脑完成；生产环境建议使用 HTTPS、内网/VPN 或 IP 白名单保护管理台。
 
 #### 4. 接入 SelfNAS
 
@@ -419,7 +419,7 @@ go build -o relay ./cmd/relay
 | --- | --- | --- | --- |
 | GET | `/healthz` | 无 | 健康检查 |
 | GET | `/api/setup/status` | 无 | 是否需要初始化 |
-| POST | `/api/setup/password` | 仅本机 | 首次设置管理员密码 |
+| POST | `/api/setup/password` | 初始化前可访问 | 首次设置管理员密码 |
 | POST | `/api/login` / `/api/logout` | 无 | 登录 / 登出 |
 | GET | `/api/me` | Cookie | 当前账号信息 |
 | POST | `/api/password/change` | Cookie | 修改密码 |
@@ -435,7 +435,7 @@ go build -o relay ./cmd/relay
 
 ### 安全边界与已知约束
 
-- **管理接口应放在可信网络内**：初始化接口严格只接受回环地址；日常管理 API 依赖登录 Cookie。不要把管理台直接暴露到公网，建议用反向代理 + HTTPS + IP 白名单，或限制只监听内网网卡；对外只暴露 `/n/` 数据面路径。
+- **管理接口应放在可信网络内**：首次初始化允许远程完成，但初始化入口和日常管理 API 都应使用反向代理 + HTTPS + IP 白名单，或限制只监听内网/VPN 网卡；不要把未保护的管理台直接暴露到公网，对外只暴露 `/n/` 数据面路径。日常管理 API 依赖登录 Cookie。
 - **令牌只以哈希落库**：`request_token` 和 `node_token` 明文都不写数据库；前者只在创建时返回一次，后者只在批准时通过查询接口返回一次。
 - **secret 必须备份**：`relay_meta.token_secret` 丢失会导致所有已发节点凭证失效、需要重新申请。备份 `data/relay.db` 即包含它。
 - **单 Relay**：一台 SelfNAS 当前只连接一台 Relay（客户端侧单个全局连接状态），不支持多 Relay 并行。

@@ -13,7 +13,6 @@ import (
 	"errors"
 	"io/fs"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -150,22 +149,9 @@ func (s *server) setupStatus(w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, 200, apiResult{Data: map[string]bool{"setup_required": count == 0}})
 }
 
-func localOnly(r *http.Request) bool {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		host = r.RemoteAddr
-	}
-	ip := net.ParseIP(host)
-	return ip != nil && ip.IsLoopback()
-}
-
 func (s *server) setupPassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", 405)
-		return
-	}
-	if !localOnly(r) {
-		jsonOut(w, 403, apiResult{Code: 1, Msg: "首次初始化只能在服务器本机完成"})
 		return
 	}
 	var input struct {
