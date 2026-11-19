@@ -381,6 +381,16 @@ GET /healthz  →  {"code":0,"data":{"status":"ok"}}
 
 **本项目只编译 Windows 和 Linux 两个平台版本，不提供 macOS 版本。** 原因很直接：selfnas-relay 是部署在服务器上的常驻服务，实际部署环境只有 Windows 服务器和 Linux 服务器，没有 macOS 服务器；因此不维护 macOS 构建。
 
+Linux 提供两种 CPU 架构，按服务器选对应的包：
+
+| 平台 / 架构 | 适用 | 包名 |
+| --- | --- | --- |
+| Windows amd64 | Windows 服务器 / PC | `selfnas-relay-v*-windows-amd64.zip` |
+| Linux amd64 | 常见的 x86_64 服务器 | `selfnas-relay-v*-linux-amd64.zip` |
+| Linux arm64 | ARM 服务器、ARM 开发板、部分云主机 | `selfnas-relay-v*-linux-arm64.zip` |
+
+不确定服务器架构时，在 Linux 上执行 `uname -m`：`x86_64` 选 amd64，`aarch64` / `arm64` 选 arm64。
+
 交叉编译命令（`go build` 纯 Go + CGO_ENABLED=0，SQLite 用的是纯 Go 实现 `modernc.org/sqlite`，无需本地 C 库）：
 
 ```bash
@@ -389,12 +399,15 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o relay.exe ./cmd/relay
 
 # Linux amd64（产出 relay）
 CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build -o relay    ./cmd/relay
+
+# Linux arm64（产出 relay）
+CGO_ENABLED=0 GOOS=linux   GOARCH=arm64 go build -o relay    ./cmd/relay
 ```
 
-在 Windows 上用 PowerShell 交叉编译 Linux 版：
+在 Windows 上用 PowerShell 交叉编译 Linux 版（把 `GOARCH` 改成 `arm64` 即出 arm64 版）：
 
 ```powershell
-$env:CGO_ENABLED=0; $env:GOOS='linux'; $env:GOARCH='amd64'
+$env:CGO_ENABLED=0; $env:GOOS='linux'; $env:GOARCH='amd64'   # 或 'arm64'
 go build -o relay ./cmd/relay
 ```
 
