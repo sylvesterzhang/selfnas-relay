@@ -268,8 +268,21 @@ Relay 在转发 `text/html` 响应时做了两件事（`rewriteRelayHTML`）：
    - `HTMLImageElement` / `HTMLMediaElement` / `HTMLSourceElement` 的 `src` setter
    - `window.open`
    - 响应头里的 `Location` 跳转也会自动加上 `/n/{node_id}` 前缀。
+3. 如果 Relay 挂在 Nginx 的子路径下，Relay 读取 `X-Forwarded-Prefix`，把前缀拼成 `/selfnas-relay/n/{node_id}`，避免页面后续请求掉回域名根路径。
 
-这样访客点页面里的任何链接、播放器发起的任何请求，都会留在正确的节点转发路径上。
+这样访客点页面里的任何链接、播放器发起的任何请求，都会留在正确的节点转发路径上。子路径反代必须把外部前缀传给 Relay，例如：
+
+```nginx
+location /selfnas-relay/ {
+    proxy_pass http://host.docker.internal:8088/;
+    proxy_set_header X-Forwarded-Prefix /selfnas-relay;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 3600s;
+}
+```
+
+其中 `proxy_pass` 的末尾 `/` 负责剥掉外部前缀，`X-Forwarded-Prefix` 则告诉 Relay 浏览器实际应该使用哪个外部前缀；两项都不能漏。
 
 ### 限速与并发
 

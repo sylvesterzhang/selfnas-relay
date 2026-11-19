@@ -230,6 +230,20 @@ func (d *relayDataPlane) revoke(id string) {
 	}
 }
 
+func forwardedPrefix(r *http.Request) string {
+	prefix := strings.TrimSpace(r.Header.Get("X-Forwarded-Prefix"))
+	if comma := strings.IndexByte(prefix, ','); comma >= 0 {
+		prefix = strings.TrimSpace(prefix[:comma])
+	}
+	if prefix == "" || prefix == "/" {
+		return ""
+	}
+	if !strings.HasPrefix(prefix, "/") {
+		prefix = "/" + prefix
+	}
+	return strings.TrimRight(prefix, "/")
+}
+
 func rewriteRelayHTML(body []byte, prefix string) []byte {
 	for _, attr := range []string{"href=\"/", "src=\"/", "action=\"/"} {
 		body = bytes.ReplaceAll(body, []byte(attr), []byte(strings.TrimSuffix(attr, "/")+prefix+"/"))
@@ -257,6 +271,7 @@ func (d *relayDataPlane) forward(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "node offline", http.StatusBadGateway)
 		return
 	}
+	routePrefix := forwardedPrefix(r) + "/n/" + parts[0]
 	defer func() {
 		log.Printf("[relay] %s %s node=%s bytes=%d duration=%s", r.Method, r.URL.Path, parts[0], responseBytes, time.Since(started))
 	}()
@@ -329,7 +344,7 @@ func (d *relayDataPlane) forward(w http.ResponseWriter, r *http.Request) {
 					if strings.EqualFold(k, "Location") {
 						for _, v := range values {
 							if strings.HasPrefix(v, "/") && !strings.HasPrefix(v, "/n/") {
-								v = "/n/" + parts[0] + v
+								v = routePrefix + v
 							}
 							w.Header().Add(k, v)
 						}
@@ -370,14 +385,14 @@ func (d *relayDataPlane) forward(w http.ResponseWriter, r *http.Request) {
 					for k, values := range responseHeaders {
 						for _, v := range values {
 							if strings.EqualFold(k, "Location") && strings.HasPrefix(v, "/") && !strings.HasPrefix(v, "/n/") {
-								v = "/n/" + parts[0] + v
+								v = routePrefix + v
 							}
 							if !strings.EqualFold(k, "Content-Length") {
 								w.Header().Add(k, v)
 							}
 						}
 					}
-					body := rewriteRelayHTML(htmlBody.Bytes(), "/n/"+parts[0])
+					body := rewriteRelayHTML(htmlBody.Bytes(), routePrefix)
 					w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 					w.WriteHeader(responseStatus)
 					_, _ = w.Write(body)
