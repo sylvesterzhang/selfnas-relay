@@ -330,7 +330,7 @@ nextWrite = max(now, nextWrite) + delay
 
 #### 1. 配置环境变量
 
-复制 `deploy/env.example`：
+复制 `deploy/env.example` 为 `.env`，按需修改（监听地址 / 端口 / 数据库路径 / 管理员用户名）：
 
 ```text
 RELAY_LISTEN_ADDR=0.0.0.0
@@ -339,15 +339,25 @@ RELAY_SQLITE_PATH=data/relay.db
 RELAY_ADMIN_USER=admin
 ```
 
+程序本身只认环境变量，不会自动读 `.env` 文件——**Linux 用随包提供的 `start.sh` 启动即可，它会自动加载 `.env`**（见下一步）。不用脚本时，也可以自己 `export` 这些变量或用 systemd 的 `Environment=` 注入。
+
 #### 2. 启动
 
-```bash
-# Windows
-relay.exe
+**Linux（推荐用随包的启动脚本，支持 start / stop / restart / status）：**
 
-# Linux
-./relay
+```bash
+chmod +x start.sh          # 解压后给脚本一次执行权限
+./start.sh start           # 启动（后台运行，PID 写 relay.pid，日志写 relay.log）
+./start.sh status          # 查看运行状态
+./start.sh restart         # 重启
+./start.sh stop            # 停止
 ```
+
+脚本会加载 `.env`、给 `relay` 加执行权限、后台启动并记录 PID；`stop` 按 PID 结束进程（会核对确属本程序的 relay，不会误杀别的进程）。日志在 `relay.log`，排障直接看它。
+
+**Windows：** 双击 `relay.exe` 启动（或命令行 `relay.exe`）；环境变量可在 PowerShell 里用 `$env:RELAY_LISTEN_PORT=8080` 之类设置。
+
+> 也可以直接用 systemd 托管：写一个 unit，`WorkingDirectory` 设为解压目录，`ExecStart` 指向 `relay`，需要改端口/路径就用 `Environment=` 注入上面那些变量。
 
 #### 3. 首次初始化
 
