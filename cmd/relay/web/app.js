@@ -1,7 +1,11 @@
 const $ = (s) => document.querySelector(s);
+// 管理台可以挂在域名根路径，也可以挂在 /selfnas-relay/ 这类反向代理子路径下。
+// API 必须跟随当前页面前缀，否则浏览器会把 /api/* 发到域名根路径。
+const APP_BASE = window.location.pathname.replace(/\/+$/, '');
 let applications = [], nodes = [];
 async function api(path, options = {}) {
-  const response = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const requestPath = APP_BASE + path;
+  const response = await fetch(requestPath, { headers: { 'Content-Type': 'application/json' }, ...options });
   const data = await response.json().catch(() => ({}));
   if (response.status === 401 && path !== '/api/login') { showLogin(); throw new Error('未登录'); }
   if (!response.ok || data.code) throw new Error(data.msg || '请求失败');
