@@ -2,11 +2,15 @@
 /bin/
 /relay
 *.exe
+*.exe~
+/release/
 
 # Local environment and secrets
 .env
 *.local
 *.log
+/data/
+*.db
 
 # Go tools
 vendor/
